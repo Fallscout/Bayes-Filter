@@ -18,11 +18,21 @@
 	\tableofcontents
 	
 	\section{Introduction}
+	This report is part of the third assignment for the course Autonomous Robotic Systems. In this report, we present our implementation of a Bayes Filter for a world model containing a corridor with several doors. Furthermore, we discuss the results that we obtained.	
+		
 	
 	\section{The world model}
+ The robot can move between 10 grid cells in the world model. Because the robot is able to traverse through them in both directions, 20 states are available.	
 	
+	Therefore, the world model needs to store information about 20 states. It is necessary that through the sensing measurements it can be decuded which states match the measured state because this needs to be used in the calculcations for the sensing update.
+	
+	The possible values for each state are represented in the enum \textit{WORLD\_MEASURE}. This enum contains the following four values: \textit{L},\textit{LR},\textit{LRF} and \textit{R}
+	
+	The characters in each value represent whether a wall has been measured on the left\textit{(L)}, right\textit{(R)} or front\textit{(F)} side, with a combination indicating that multiple walls have been found.
+	
+	Therefore, the world model is represented through a vector with size 20 and information about which measurements should be true in this state contained in the respective enum value.
 	\section{The Bayes Filter}
-	Starts with a uniformly distributed belief state
+	The Bayes Filter is initialized with a uniformly distributed belief state, i.e. 0.05 for each state because there are 20 states.
 	
 		\subsection{Update step}
 		The update step is executed whenever the robot moves forward or makes a 180 degree turn.
@@ -32,7 +42,22 @@
 			p(x_i) = 0.8\times p(x_{i-1}) + 0.1\times p(x_{i-2}) + 0.1\times p(x_i)
 		\end{displaymath}
 		
-		Similarly, for the \textit{turn} command, this results in:
+		The world model is not cyclic, therefore two additional calculations are necessary for certain states.
+		States for which $i\%10==1$ holds true, the equation is:
+		
+		\begin{displaymath}
+		p(x_i) = 0.8\times p(x_{i-1}) + 0.1\times p(x_i)
+		\end{displaymath}
+		
+		Furthermore, the equation for states for which $i\%10==0$ holds true is:
+		
+		\begin{displaymath}
+		p(x_i) = 0.1\times p(x_i)
+		\end{displaymath}
+		
+		This is necessary because, after a movement update, the states \textit{0} and \textit{10} can only be reached by being in the respective state already and the move failing. The same holds true for states \textit{1} and \textit{11}, which can be reached by correctly moving from states \textit{0} or \textit{10} or failing to move when they are in their state already.
+		
+		For the \textit{turn} command, the equation results in:
 		
 		\begin{displaymath}
 			p(x_i) = 0.9\times p(x_{N-1-i}) + 0.1\times p(x_i)
