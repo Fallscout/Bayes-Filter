@@ -1,0 +1,50 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[parfill]{parskip}
+\usepackage[section]{placeins}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage[scientific-notation=true]{siunitx}
+\usepackage{amsmath}
+
+\author{Christoph Emunds (i6146758)\\Dominik Nerger (i6146759)}
+\title{Autonomous Robotic Systems\\Bayes Filter}
+\date{\today}
+
+\begin{document}
+	\maketitle
+	
+	\tableofcontents
+	
+	\section{Introduction}
+	
+	\section{The world model}
+	
+	\section{The Bayes Filter}
+	Starts with a uniformly distributed belief state
+	
+		\subsection{Update step}
+		The update step is executed whenever the robot moves forward or makes a 180 degree turn.
+		To calculate the probability for being in a state $x$ after a motion command, the probabilities of all possible starting states is weighted according to the given transition probabilities and summed up. For the \textit{move forward} command, this equates to:
+		
+		\begin{displaymath}
+			p(x_i) = 0.8\times p(x_{i-1}) + 0.1\times p(x_{i-2}) + 0.1\times p(x_i)
+		\end{displaymath}
+		
+		Similarly, for the \textit{turn} command, this results in:
+		
+		\begin{displaymath}
+			p(x_i) = 0.9\times p(x_{N-1-i}) + 0.1\times p(x_i)
+		\end{displaymath}
+		
+		\subsection{Measurement step}
+		The probability for being in a state that is conform with the measurement is multiplied by a factor of $0.6$, the probability for every other state is multiplied by $0.2$.
+	
+	\section{Results}
+	Most states in the corridor have a wall on both sides, which makes them indistinguishable.
+	When issuing the \textit{measurement} command in a state that has a door, the probabilities of the three states containing a door raises. Multiple continuous measurements cause the robot's confidence for being in one of these three states to grow.
+	
+	\section{Conclusion}
+	
+\end{document}
