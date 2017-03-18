@@ -165,6 +165,8 @@ class BayesFilter {
 	{
         std::vector<double> newBelief;
 
+        double sum = 0.0;
+
         for(int i = 0; i < NUM_STATES; i++) {
             printf("State %i before move update: %f\n", i, beliefStates[i]);
 
@@ -178,14 +180,17 @@ class BayesFilter {
             }else{
                 newBelief.push_back(0.1*beliefStates[i]);
             }
+            sum+=newBelief[i];
             printf("State %i after move update: %f\n", i, newBelief[i]);
         }
 
-        double sum = 0;
+        double norm_sum = 0;
         for(int i = 0; i < NUM_STATES; i++) {
-            sum += newBelief[i];
+            newBelief[i] /= sum;
+            norm_sum += newBelief[i];
+            printf("State %i after normalization: %f\n", i, newBelief[i]);
         }
-        printf("Sum after move: %f\n", sum);
+        printf("Sum after move-normalization: %f\n", norm_sum);
         beliefStates = newBelief;
 
 	};
