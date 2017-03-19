@@ -18,23 +18,23 @@
 	\tableofcontents
 	
 	\section{Introduction}
-	This report is part of the third assignment for the course Autonomous Robotic Systems. In this report, we present our implementation of a Bayes Filter for a world model containing a corridor with several doors. Furthermore, we discuss the results that we obtained.	
+	The Bayes filter, in the context of mobile robot localization also called \textit{Recursive Bayesian Estimation}, uses sensor measurements and a mathematical process model to estimate an unknown probability density function recursively over time.	This document describes the implementation of a Bayes filter in the Robot Operating System (ROS) framework and reflects on the filter's performance with regard to its localization capabilities in different situations. The world in which the robot is situated consists of a corridor with several doors.
+	
+	%This report is part of the third assignment for the course Autonomous Robotic Systems. In this report, we present our implementation of a Bayes Filter for a world model containing a corridor with several doors. Furthermore, we discuss the results that we obtained.	
 		
-	
 	\section{The world model}
- The robot can move between 10 grid cells in the world model. Because the robot is able to traverse through them in both directions, 20 states are available.	
+	The robot can move between 10 grid cells in the world model. Since the robot is able to traverse through them in both directions, 20 states are available.	
 	
-	Therefore, the world model needs to store information about 20 states. It is necessary that through the sensing measurements it can be decuded which states match the measured state because this needs to be used in the calculcations for the sensing update.
+	Therefore, the world model needs to store information about 20 states. It is necessary that through the sensing measurements it can be deduced which states match the measured state, because this needs to be used in the calculations for the sensing update.
 	
-	The possible values for each state are represented in the enum \textit{WORLD\_MEASURE}. This enum contains the following four values: \textit{L},\textit{LR},\textit{LRF} and \textit{R}
+	The possible values for each state are represented through an enumeration. This enumeration contains the four values \textit{L},\textit{LR},\textit{LRF} and \textit{R}. The characters express whether a wall has been measured on the left\textit{(L)}, right\textit{(R)} or front\textit{(F)} side, with a combination indicating that multiple walls have been found.
 	
-	The characters in each value represent whether a wall has been measured on the left\textit{(L)}, right\textit{(R)} or front\textit{(F)} side, with a combination indicating that multiple walls have been found.
+	Therefore, the world model is represented through a vector with size 20 and information about which measurements should be true in this state contained in the respective enumeration value.
 	
-	Therefore, the world model is represented through a vector with size 20 and information about which measurements should be true in this state contained in the respective enum value.
-	\section{The Bayes Filter}
-	The Bayes Filter is initialized with a uniformly distributed belief state, i.e. 0.05 for each state because there are 20 states.
+	\section{The Bayes filter}
+	The Bayes Filter is initialized with a uniformly distributed belief state. This results in an initial probability of $p(x_i)=\frac{1}{20}=0.05$ for each state, since there are 20 states.
 	
-		\subsection{Update step}
+		\subsection{Control update}
 		The update step is executed whenever the robot moves forward or makes a 180 degree turn.
 		To calculate the probability for being in a state $x$ after a motion command, the probabilities of all possible starting states is weighted according to the given transition probabilities and summed up. For the \textit{move forward} command, this equates to:
 		
@@ -63,10 +63,16 @@
 			p(x_i) = 0.9\times p(x_{N-1-i}) + 0.1\times p(x_i)
 		\end{displaymath}
 		
-		\subsection{Measurement step}
-		The probability for being in a state that is conform with the measurement is multiplied by a factor of $0.6$, the probability for every other state is multiplied by $0.2$.
+		\subsection{Measurement update}		
+		The prior belief $\bar{bel(x_t)}$ before incorporating the measurement update is now multiplied by the probability that the measurement $z_t$ has been taken. This is done for each possible posterior state. The resulting product is not a probability anymore and needs to be normalized again, such that the probabilities of the states sum to 1.
+		
+		A measurement is taken, i.e. either there is a wall or there is none. Then, for each possible state it is checked whether the measurement agrees with the layout of the state, that is, if there is a wall when a wall has been detected by the sensors or not. Then, the probability for being in a state that is conform with the measurement is multiplied by a factor of $0.6$, the probability for every other state is multiplied by $0.2$. 
+		
+		During this first loop, the resulting products are also summed up. In a second loop, the calculated values are then divided by the sum, such that they represent proper probabilities again.
 	
 	\section{Results}
+	There is practically no information that needs to be remembered to calculate the next belief state, so we can assume that the state is complete and that the Markov assumption holds.
+	
 	Most states in the corridor have a wall on both sides, which makes them indistinguishable.
 	When issuing the \textit{measurement} command in a state that has a door, the probabilities of the three states containing a door raises. Multiple continuous measurements cause the robot's confidence for being in one of these three states to grow.
 	
