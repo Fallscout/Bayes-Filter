@@ -27,7 +27,7 @@
 	
 	%Therefore, the world model needs to store information about 20 states. It is necessary that through the sensing measurements it can be deduced which states match the measured state, because this needs to be used in the calculations for the sensing update.
 	
-	The wall layout for each state is represented with an enumeration. This enumeration contains the four values \textit{L},\textit{LR},\textit{LRF} and \textit{R}. The characters express whether a wall has been measured to the left\textit{(L)}, to the right\textit{(R)} or in front\textit{(F)} of the robot, with a combination indicating that multiple walls have been found. Therefore, the world model is represented through a 20-dimensional vector and information about which measurements should be true in this state contained in the respective enumeration value.
+	The wall layout for each state is represented with an enumeration. This enumeration contains the four values \textit{L},\textit{LR},\textit{LRF} and \textit{R}. The characters express whether a wall has been measured to the left\textit{(L)}, to the right\textit{(R)} or in front\textit{(F)} of the robot, with a combination indicating that multiple walls have been found. Therefore, the world model is represented through a vector of size 20 and information about which measurements should be true in this state contained in the respective enumeration value.
 	
 	\section{The Bayes filter}
 	The Bayes filter is initialized with a uniformly distributed belief state. Sine there are 20 states, this results in an initial probability of $p(x_i)=\frac{1}{20}=0.05$ for each state. Afterwards the probabilities for the next belief state are calculated by alternating the \textit{control update} and the \textit{measurement update} step.
@@ -40,23 +40,23 @@
 		\end{displaymath}
 		
 		To practically calculate the new belief $\overline{bel}(x_t)$ after the \textit{move forward} command, we take a belief state $x_i$ and consider the states $x_i$, $x_{i-1}$ and $x_{i-2}$, from which $x_i$ can be reached. The probabilities of these three possible starting locations is weighted according to the given transition probabilities and summed up. For the \textit{move forward} command, this equates to:
-		
+		%Bin mir nicht so sicher, ob das hier so richtig ist. Müssen wir nochmal diskutieren
 		\begin{displaymath}
 			\overline{bel}(x_t) = 0.8\times p(x_{i-1}) + 0.1\times p(x_{i-2}) + 0.1\times p(x_i)
 		\end{displaymath}
 		
-		However, two extra cases have to be considered. The first extra case are the states $x_i$ for which $i \mod{10} = 0$ holds true, i.e. the states $x_0$ and $x_{10}$. Since the world is not cyclic, there are no states $x_{i-1}$ and $x_{i-2}$ from which the states $x_0$ and $x_{10}$ could be reached. Therefore, the probability of these two states is calculated according to
+		However, two extra cases have to be considered. The first extra case are the states $x_i$ for which ($i \mod{10} = 0$) holds true, i.e. the states $x_0$ and $x_{10}$. Since the world is not cyclic, there are no states $x_{i-1}$ and $x_{i-2}$ from which the states $x_0$ and $x_{10}$ could be reached. Therefore, the probability of these two states is calculated according to
 		\begin{displaymath}
 			\overline{bel}(x_t) = 0.1\times p(x_i)
 		\end{displaymath}
 		
-		The second extra case are the states $x_i$ for which $i \mod{10}=1$ holds true. Explicitly, these are the states $x_1$ and $x_{11}$. Similarly to the above reasoning, there are no states $x_{i-2}$ from which the states $x_1$ and $x_{11}$ could be reached. Therefore, the probability of these two states is calculated according to		
+		The second extra case are the states $x_i$ for which ($i \mod{10}=1$) holds true. Explicitly, these are the states $x_1$ and $x_{11}$. Similarly to the above reasoning, there are no states $x_{i-2}$ from which the states $x_1$ and $x_{11}$ could be reached. Therefore, the probability of these two states is calculated according to		
 		\begin{displaymath}
 			\overline{bel}(x_t) = 0.8\times p(x_{i-1}) + 0.1\times p(x_i)
 		\end{displaymath}
 		
 		%Diesbezüglich sollten wir vielleicht nochmal die anderen fragen
-		Due to these extra cases, the resulting values for $\overline{bel}(x_t)$ do not sum to 1 anymore and need to be normalized again.
+		Due to these extra cases, the resulting values for $\overline{bel}(x_t)$ do not sum to a probability of 1 anymore and need to be normalized again.
 		
 		The new belief state for the \textit{turn} command is calculated according to		
 		\begin{displaymath}
@@ -79,15 +79,16 @@
 	There is practically no information that needs to be remembered to calculate the next belief state, so we can assume that the state is complete and that the Markov assumption holds.
 	
 	Most states in the corridor have a wall on both sides, which makes them indistinguishable.
-	When issuing the \textit{measurement} command in a state that has a door, the probabilities of the three states containing a door raises. Multiple continuous measurements cause the robot's confidence for being in one of these three states to grow.
+	When issuing the \textit{measurement} command in a state that has a door on either the left or the right side, the probabilities of the states containing a door on the specific side rise. Multiple continuous measurements cause the robots confidence for being in one of these states to grow.
+	Furthermore, the same holds true when a wall is measured in front of the robot. Then the probability that the robot is in one of the two states that should measure a wall in front rise severely.
 	
-	States that are opposite to a door are also easily identified.
+	%States that are opposite to a door are also easily identified.
 	Noise in sensing, moving and turning cause the certainty to drop. However, the robot quickly recovers from that when reaching another location that is easily distinguishable from the rest.
 	Most of the time the robot tracks two hypotheses. After taking measurements at two unique locations in a row, most of the probability focusses on only one state. This certainty is kept when alternating movement (including \textit{move forward} and \textit{turn}) and sensing, until one of these actions fails.
 	
-	Consider the example case in which the robot should move one cell forward. If it fails to do so and stays at its location, still $80\%$ of the probability of the current state are convolved to the next state. However, after reaching the next state that either has a door, is opposite to a door or has a wall in front of the robot, the probability quickly focusses on the right state again.
+	Consider the example case in which the robot should move one cell forward. If it fails to do so and stays at its location, still $80\%$ of the probability of the current state are convolved to the next state. However, after reaching the next state that either has a door, is opposite to a door or has a wall in front of the robot, the probability quickly focusses on the right state again, allowing for a quick recovery.
 	
 	\section{Conclusion}
-	The results showed that our implementation behaves according to the theory of Bayes filters. If the robot reaches a location that it can distinguish from most of the other locations, its certainty for being in one of these states grows. After reaching a second location that differs from most of the other locations, most of the probability focusses on the right state. The implementation is also robust to noise in the robot's measurements and actions.
+	The results show that our implementation behaves according to the theory of Bayes filters. If the robot reaches a location that it can distinguish from most of the other locations, its certainty for being in one of these states grows. After reaching a second location that differs from most of the other locations, most of the probability focusses on the right state. The implementation is also robust to noise in the measurements and actions of the robot.
 	
 \end{document}
