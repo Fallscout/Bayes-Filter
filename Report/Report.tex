@@ -27,53 +27,53 @@
 	
 	%Therefore, the world model needs to store information about 20 states. It is necessary that through the sensing measurements it can be deduced which states match the measured state, because this needs to be used in the calculations for the sensing update.
 	
-	The wall layout for each state is represented with an enumeration. This enumeration contains the four values \textit{L},\textit{LR},\textit{LRF} and \textit{R}. The characters express whether a wall has been measured to the left\textit{(L)}, to the right\textit{(R)} or in front\textit{(F)} of the robot, with a combination indicating that multiple walls have been found. Therefore, the world model is represented through a vector of size 20 and information about which measurements should be true in this state contained in the respective enumeration value.
+	The wall layout for each state is represented with an enumeration. This enumeration contains the four values \textit{L},\textit{LR},\textit{LRF} and \textit{R}. The characters express whether a wall has been measured to the left\textit{(L)}, to the right\textit{(R)} or in front\textit{(F)} of the robot, with a combination indicating that multiple walls have been found. Therefore, the world model is represented through a vector of size 20 and information about which measurements should be true in each state is contained in the respective enumeration value, e.g. for state $x_9$ the value is \textit{LRF}.
 	
 	\section{The Bayes filter}
 	The Bayes filter is initialized with a uniformly distributed belief state. Sine there are 20 states, this results in an initial probability of $p(x_i)=\frac{1}{20}=0.05$ for each state. Afterwards the probabilities for the next belief state are calculated by alternating the \textit{control update} and the \textit{measurement update} step.
 	
 		\subsection{Control update}
 		%Clarify: Is belief state the probability of a certain cell or a certain probability configuration for each cell?
-		The control update is executed whenever the robot moves forward or makes a 180 degree turn. The belief state $\overline{bel}(x_t)$ represents the next belief state before the measurement is taken into account and is calculated according to the following formula:
+		The control update is executed whenever the robot moves forward or makes a 180 degree turn. The belief state $\overline{bel}(x)$ represents the next belief state before the measurement is taken into account and is calculated according to the following formula:
 		\begin{displaymath}
-			\overline{bel}(x_t) = \sum p(x_t|u_t,x_{t-1})bel(x_{t-1})
+			\overline{bel}(x) = \sum p(x|u,x')bel(x')
 		\end{displaymath}
 		
-		To practically calculate the new belief $\overline{bel}(x_t)$ after the \textit{move forward} command, we take a belief state $x_i$ and consider the states $x_i$, $x_{i-1}$ and $x_{i-2}$, from which $x_i$ can be reached. The probabilities of these three possible starting locations is weighted according to the given transition probabilities and summed up. For the \textit{move forward} command, this equates to:
+		To practically calculate the new belief $\overline{bel}(x)$ after the \textit{move forward} command, we take a belief state $x_i$ and consider the states $x_i$, $x_{i-1}$ and $x_{i-2}$, from which $x_i$ can be reached. The probabilities of these three possible starting locations is weighted according to the given transition probabilities and summed up. For the \textit{move forward} command, this equates to:
 		%Bin mir nicht so sicher, ob das hier so richtig ist. Müssen wir nochmal diskutieren
 		\begin{displaymath}
-			\overline{bel}(x_t) = 0.8\times p(x_{i-1}) + 0.1\times p(x_{i-2}) + 0.1\times p(x_i)
+			\overline{bel}(x_i) = 0.8\times p(x_{i-1}') + 0.1\times p(x_{i-2}') + 0.1\times p(x_i')
 		\end{displaymath}
 		
 		However, two extra cases have to be considered. The first extra case are the states $x_i$ for which ($i \mod{10} = 0$) holds true, i.e. the states $x_0$ and $x_{10}$. Since the world is not cyclic, there are no states $x_{i-1}$ and $x_{i-2}$ from which the states $x_0$ and $x_{10}$ could be reached. Therefore, the probability of these two states is calculated according to
 		\begin{displaymath}
-			\overline{bel}(x_t) = 0.1\times p(x_i)
+			\overline{bel}(x_i) = 0.1\times p(x_i')
 		\end{displaymath}
 		
 		The second extra case are the states $x_i$ for which ($i \mod{10}=1$) holds true. Explicitly, these are the states $x_1$ and $x_{11}$. Similarly to the above reasoning, there are no states $x_{i-2}$ from which the states $x_1$ and $x_{11}$ could be reached. Therefore, the probability of these two states is calculated according to		
 		\begin{displaymath}
-			\overline{bel}(x_t) = 0.8\times p(x_{i-1}) + 0.1\times p(x_i)
+			\overline{bel}(x_i) = 0.8\times p(x_{i-1}') + 0.1\times p(x_i')
 		\end{displaymath}
 		
 		%Diesbezüglich sollten wir vielleicht nochmal die anderen fragen
-		Due to these extra cases, the resulting values for $\overline{bel}(x_t)$ do not sum to a probability of 1 anymore and need to be normalized again.
+		Due to these extra cases, the resulting values for $\overline{bel}(x)$ do not sum to a probability of 1 anymore and need to be normalized again.
 		
 		The new belief state for the \textit{turn} command is calculated according to		
 		\begin{displaymath}
-			\overline{bel}(x_t) = 0.9\times p(x_{N-1-i}) + 0.1\times p(x_i)
+			\overline{bel}(x) = 0.9\times p(x_{N-1-i}') + 0.1\times p(x_i')
 		\end{displaymath}
 		where $N$ is the number of belief states.
 		
 		\subsection{Measurement update}
 		The belief state after incorporating the measurement probability is represented by
 		\begin{displaymath}
-			bel(x_t)=\eta p(z_t|x_t)\overline{bel}(x_t)
+			bel(x)=\eta p(z|x')\overline{bel}(x')
 		\end{displaymath}
-		where $\overline{bel}(x_t)$ is the previously calculated belief state after the control update but before taking the measurement into account, $p(z_t|x_t)$ is the probability that the measurement $z_t$ has been taken in the state $x_t$ and $\eta$ is a normalization constant.
+		where $\overline{bel}(x')$ is the previously calculated belief state after the control update but before taking the measurement into account, $p(z|x')$ is the probability that the measurement $z$ has been taken in the state $x$ and $\eta$ is a normalization constant.
 		
-		To calculate the new belief state $bel(x_t)$, a measurement is taken. This measurement consists of checking whether there is a wall to the left, to the right and in front of the robot. Then, for each belief state $x_i$ it is checked whether the measurement agrees with the layout of the current cell, i.e. if the value for the boolean variables \verb|wall_left|, \verb|wall_right| and \verb|wall_front| corresponds to state $x_i$ having a wall to the left, right or front, respectively. If the measurement agrees with there being a wall, the probability for being in the corresponding state is multiplied by a factor of $0.6$. The probability for every other state is multiplied by $0.2$.
+		To calculate the new belief state $bel(x)$, a measurement is taken. This measurement consists of checking whether there is a wall to the left, to the right and in front of the robot. Then, for each belief state $x_i$ it is checked whether the measurement agrees with the layout of the current cell, i.e. if the value for the boolean variables \verb|wall_left|, \verb|wall_right| and \verb|wall_front| corresponds to state $x_i$ having a wall to the left, right or front, respectively. If the measurement agrees with there being a wall, the probability for being in the corresponding state is multiplied by a factor of $0.6$. The probability for every other state is multiplied by $0.2$.
 		
-		During this first loop, the resulting products are also summed up. In a second loop, the calculated values are then divided by the sum, such that they represent proper probabilities again.
+		During this first loop, the resulting products are also summed up. In a second loop, the calculated values are then divided by the sum, such that they represent proper probabilities again, normalizing the belief states.
 	
 	\section{Results}
 	There is practically no information that needs to be remembered to calculate the next belief state, so we can assume that the state is complete and that the Markov assumption holds.
