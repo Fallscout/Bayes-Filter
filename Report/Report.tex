@@ -23,7 +23,7 @@
 	%This report is part of the third assignment for the course Autonomous Robotic Systems. In this report, we present our implementation of a Bayes Filter for a world model containing a corridor with several doors. Furthermore, we discuss the results that we obtained.	
 		
 	\section{The world model}
-	The environment the robot is situated in consists of a corridor with several doors. The corridor is discretized into ten cells, which can be traversed either from left to right or the other way around. The cell the robot is located in together with the direction it is facing make up a belief state, which results in 20 possible states.
+	The environment the robot is situated in consists of a corridor with several doors. The corridor is discretized into ten cells, which can be traversed either from left to right or vice versa. The cell the robot is located in, together with the direction it is facing, make up a belief state, which results in 20 possible states. There is no information that needs to be remembered to calculate the next belief state, so we can assume that the state is complete and that the Markov assumption holds.
 	
 	%Therefore, the world model needs to store information about 20 states. It is necessary that through the sensing measurements it can be deduced which states match the measured state, because this needs to be used in the calculations for the sensing update.
 	
@@ -39,18 +39,18 @@
 			\overline{bel}(x) = \sum p(x|u,x')bel(x')
 		\end{displaymath}
 		
-		To practically calculate the new belief $\overline{bel}(x)$ after the \textit{move forward} command, we take a belief state $x_i$ and consider the states $x_i$, $x_{i-1}$ and $x_{i-2}$, from which $x_i$ can be reached. The probabilities of these three possible starting locations is weighted according to the given transition probabilities and summed up. For the \textit{move forward} command, this equates to:
+		To practically calculate the new belief $\overline{bel}(x)$ after the \textit{move forward} command, we take a belief state $x_i$ and consider the states $x_i'$, $x_{i-1}'$ and $x_{i-2}'$, from which $x_i$ can be reached. The probabilities of these three possible starting locations is weighted according to the given transition probabilities and summed up. For the \textit{move forward} command, this equates to:
 		%Bin mir nicht so sicher, ob das hier so richtig ist. Müssen wir nochmal diskutieren
 		\begin{displaymath}
 			\overline{bel}(x_i) = 0.8\times p(x_{i-1}') + 0.1\times p(x_{i-2}') + 0.1\times p(x_i')
 		\end{displaymath}
 		
-		However, two extra cases have to be considered. The first extra case are the states $x_i$ for which ($i \mod{10} = 0$) holds true, i.e. the states $x_0$ and $x_{10}$. Since the world is not cyclic, there are no states $x_{i-1}$ and $x_{i-2}$ from which the states $x_0$ and $x_{10}$ could be reached. Therefore, the probability of these two states is calculated according to
+		However, two extra cases have to be considered. The first extra case are the states $x_i$ for which ($i \mod{10} = 0$) holds true, i.e. the states $x_0$ and $x_{10}$. Since the world is not cyclic, there are no states $x_{i-1}'$ and $x_{i-2}'$ from which the states $x_0$ and $x_{10}$ could be reached. Therefore, the probability of these two states is calculated according to
 		\begin{displaymath}
 			\overline{bel}(x_i) = 0.1\times p(x_i')
 		\end{displaymath}
 		
-		The second extra case are the states $x_i$ for which ($i \mod{10}=1$) holds true. Explicitly, these are the states $x_1$ and $x_{11}$. Similarly to the above reasoning, there are no states $x_{i-2}$ from which the states $x_1$ and $x_{11}$ could be reached. Therefore, the probability of these two states is calculated according to		
+		The second extra case are the states $x_i$ for which ($i \mod{10}=1$) holds true. Explicitly, these are the states $x_1$ and $x_{11}$. Similarly to the above reasoning, there are no states $x_{i-2}'$ from which the states $x_1$ and $x_{11}$ could be reached. Therefore, the probability of these two states is calculated according to		
 		\begin{displaymath}
 			\overline{bel}(x_i) = 0.8\times p(x_{i-1}') + 0.1\times p(x_i')
 		\end{displaymath}
@@ -60,30 +60,29 @@
 		
 		The new belief state for the \textit{turn} command is calculated according to		
 		\begin{displaymath}
-			\overline{bel}(x) = 0.9\times p(x_{N-1-i}') + 0.1\times p(x_i')
+			\overline{bel}(x_i) = 0.9\times p(x_{N-1-i}') + 0.1\times p(x_i')
 		\end{displaymath}
 		where $N$ is the number of belief states.
 		
 		\subsection{Measurement update}
 		The belief state after incorporating the measurement probability is represented by
 		\begin{displaymath}
-			bel(x)=\eta p(z|x')\overline{bel}(x')
+			bel(x)=\eta p(z|x)\overline{bel}(x)
 		\end{displaymath}
-		where $\overline{bel}(x')$ is the previously calculated belief state after the control update but before taking the measurement into account, $p(z|x')$ is the probability that the measurement $z$ has been taken in the state $x$ and $\eta$ is a normalization constant.
+		where $\overline{bel}(x)$ is the previously calculated belief state after the control update but before taking the measurement into account, $p(z|x)$ is the probability that the measurement $z$ has been taken in the state $x$ and $\eta$ is a normalization constant.
 		
 		To calculate the new belief state $bel(x)$, a measurement is taken. This measurement consists of checking whether there is a wall to the left, to the right and in front of the robot. Then, for each belief state $x_i$ it is checked whether the measurement agrees with the layout of the current cell, i.e. if the value for the boolean variables \verb|wall_left|, \verb|wall_right| and \verb|wall_front| corresponds to state $x_i$ having a wall to the left, right or front, respectively. If the measurement agrees with there being a wall, the probability for being in the corresponding state is multiplied by a factor of $0.6$. The probability for every other state is multiplied by $0.2$.
 		
 		During this first loop, the resulting products are also summed up. In a second loop, the calculated values are then divided by the sum, such that they represent proper probabilities again, normalizing the belief states.
 	
-	\section{Results}
-	There is practically no information that needs to be remembered to calculate the next belief state, so we can assume that the state is complete and that the Markov assumption holds.
+	\section{Results}	
+	Most states in the corridor have a wall on both sides, which makes them indistinguishable. When issuing the \textit{measurement} command in a state that has a door on either the left or the right side, the probabilities of the states containing a door on the specific side rise. Multiple continuous measurements cause the robots confidence for being in one of these states to grow.
 	
-	Most states in the corridor have a wall on both sides, which makes them indistinguishable.
-	When issuing the \textit{measurement} command in a state that has a door on either the left or the right side, the probabilities of the states containing a door on the specific side rise. Multiple continuous measurements cause the robots confidence for being in one of these states to grow.
 	Furthermore, the same holds true when a wall is measured in front of the robot. Then the probability that the robot is in one of the two states that should measure a wall in front rise severely.
 	
 	%States that are opposite to a door are also easily identified.
 	Noise in sensing, moving and turning cause the certainty to drop. However, the robot quickly recovers from that when reaching another location that is easily distinguishable from the rest.
+	
 	Most of the time the robot tracks two hypotheses. After taking measurements at two unique locations in a row, most of the probability focusses on only one state. This certainty is kept when alternating movement (including \textit{move forward} and \textit{turn}) and sensing, until one of these actions fails.
 	
 	Consider the example case in which the robot should move one cell forward. If it fails to do so and stays at its location, still $80\%$ of the probability of the current state are convolved to the next state. However, after reaching the next state that either has a door, is opposite to a door or has a wall in front of the robot, the probability quickly focusses on the right state again, allowing for a quick recovery.
