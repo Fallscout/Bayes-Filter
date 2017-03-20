@@ -81,13 +81,33 @@
 	Furthermore, the same holds true when a wall is measured in front of the robot. Then the probability that the robot is in one of the two states that should measure a wall in front rise severely.
 	
 	%States that are opposite to a door are also easily identified.
-	Noise in sensing, moving and turning cause the certainty to drop. However, the robot quickly recovers from that when reaching another location that is easily distinguishable from the rest.
+	Noise in sensing, moving and turning cause the certainty to drop significantly. If the robot doesn't move forward or takes two steps at once, the state with the highest probability is likely to be false. The same holds for wrong measurements while sensing the walls. The robot is able to recover from that when reaching another location that is easily distinguishable from the rest and correct measurements. If a sequence of wrong measurements and/or wrong steps occur, it is possible that the robot assigns the highest probability to a wrong state. 
 	
 	Most of the time the robot tracks two hypotheses. After taking measurements at two unique locations in a row, most of the probability focusses on only one state. This certainty is kept when alternating movement (including \textit{move forward} and \textit{turn}) and sensing, until one of these actions fails.
 	
-	Consider the example case in which the robot should move one cell forward. If it fails to do so and stays at its location, still $80\%$ of the probability of the current state are convolved to the next state. However, after reaching the next state that either has a door, is opposite to a door or has a wall in front of the robot, the probability quickly focusses on the right state again, allowing for a quick recovery.
+	Consider the example case in which the robot should move one cell forward. If it fails to do so and stays at its location, still $80\%$ of the probability of the current state are convolved to the next state. However, after reaching the next state that either has a door, is opposite to a door or has a wall in front of the robot, the probability quickly focusses on the right state again if the sensing measurements are correct, allowing for a quick recovery.
+	
+	The measurements in Figure~\ref{fig:4stepsNoNoise} show the robot, which has taken four steps forward with a sensing update after each step and no noise. As can be seen, the robot is certain that it is in state \textit{$x_9$}, which is correct. The probability for that is around \textit{0.38}. This result can be recreated because it is deterministic.
+	
+\begin{figure}[h]
+	\centering
+	\includegraphics[scale=0.9]{4stepsforward.png}
+	\caption{Four movement/sensing updates with no noise}
+	\label{fig:4stepsNoNoise}
+\end{figure}
+
+For the measurements in Figure~\ref{fig:4stepsNoise}, the robot took four steps forward with a sensing update after each step as well. However, this time both the movement and measurement noise were activated. Because of the noise, the robot is uncertain about its state because the probabilities for states \textit{$x_5$}, \textit{$x_9$} and \textit{$x_{14}$} don't differ that much. State \textit{$x_9$}, which is the correct state, still has the highest probability, but the robot is not as certain as in the example shown in Figure~\ref{fig:4stepsNoise}.
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[scale=0.9]{4stepsforwardNoise.png}
+	\caption{Four movement/sensing updates with noise}
+	\label{fig:4stepsNoise}
+\end{figure}
+\subsection{(2)}
+	
 	
 	\section{Conclusion}
-	The results show that our implementation behaves according to the theory of Bayes filters. If the robot reaches a location that it can distinguish from most of the other locations, its certainty for being in one of these states grows. After reaching a second location that differs from most of the other locations, most of the probability focusses on the right state. The implementation is also robust to noise in the measurements and actions of the robot.
+	The results show that our implementation behaves according to the theory of Bayes filters. If the robot reaches a location that it can distinguish from most of the other locations, its certainty for being in one of these states grows. After reaching a second location that differs from most of the other locations, most of the probability focusses on the right state. The implementation is also fairly robust to noise in the measurements and actions of the robot, but if a sequence of wrong measurements occur the robot might favor a wrong state for a period of time, after which it will be able to recover if distinguishable locations with no wrong measurements occur.
 	
 \end{document}
